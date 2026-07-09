@@ -1,0 +1,15 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm -v)",
+      "Bash(command -v brew)",
+      "Bash(brew list *)",
+      "Bash(command -v fnm)",
+      "Bash(command -v volta)",
+      "Bash(command -v asdf)",
+      "Read(//opt/homebrew/bin/**)",
+      "Read(//usr/local/bin/**)",
+      "Bash(kill 54515)"
+    ]
+  }
+}

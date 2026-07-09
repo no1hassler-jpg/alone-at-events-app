@@ -1,0 +1,71 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    // Public profile: any signed-in user can read; only the owner can write.
+    match /users/{userId} {
+      allow read: if isSignedIn();
+      allow create, update: if isOwner(userId);
+      allow delete: if false;
+
+      // Private profile data (email, blockedUserIds, interestedEventIds):
+      // only the owner can read or write it at all.
+      match /private/{document} {
+        allow read, write: if isOwner(userId);
+      }
+    }
+
+    // Email -> uid lookup only, so "start a chat by email" keeps working
+    // without exposing anything else about the account. A user can only
+    // create the entry that points to themselves; no updates/deletes today
+    // since there's no change-email flow.
+    match /emailLookup/{email} {
+      allow read: if isSignedIn();
+      allow create: if isSignedIn() && request.resource.data.uid == request.auth.uid;
+      allow update, delete: if false;
+    }
+
+    // Event data isn't written from the client today (mock data), but any
+    // signed-in user can read once events move into Firestore.
+    match /events/{eventId} {
+      allow read: if isSignedIn();
+      allow write: if false;
+    }
+
+    // Only the two participants can read a chat or send/read its messages.
+    match /chats/{chatId} {
+      allow read: if isSignedIn() && request.auth.uid in resource.data.participantIds;
+      allow create: if isSignedIn()
+        && request.auth.uid in request.resource.data.participantIds;
+      allow update: if isSignedIn()
+        && request.auth.uid in resource.data.participantIds;
+      allow delete: if false;
+
+      match /messages/{messageId} {
+        allow read: if isSignedIn()
+          && request.auth.uid in get(/databases/$(database)/documents/chats/$(chatId)).data.participantIds;
+        allow create: if isSignedIn()
+          && request.auth.uid == request.resource.data.senderId
+          && request.auth.uid in get(/databases/$(database)/documents/chats/$(chatId)).data.participantIds;
+        allow update, delete: if false;
+      }
+    }
+
+    // Anyone signed in can file a report/block record; nobody (including the
+    // author) can read, edit, or delete them via the client — review happens
+    // via the Firebase console or a future Admin SDK-backed tool, which bypass
+    // these rules entirely.
+    match /reports/{reportId} {
+      allow create: if isSignedIn() && request.resource.data.reporterId == request.auth.uid;
+      allow read, update, delete: if false;
+    }
+  }
+}
