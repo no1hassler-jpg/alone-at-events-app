@@ -47,7 +47,7 @@ npx expo start
 
 Scan the QR code with Expo Go (iOS/Android) to run on your device, or press `w` for the web preview.
 
-You'll need your own Firebase project — create one at [console.firebase.google.com](https://console.firebase.google.com), enable Authentication (Email/Password) and Firestore, and add your config to `src/services/firebase.ts`.
+You'll need your own Firebase project — create one at [console.firebase.google.com](https://console.firebase.google.com), enable Authentication (Email/Password) and Firestore, and add your config to `src/firebase/config.ts`.
 
 ## Why I built this
 
