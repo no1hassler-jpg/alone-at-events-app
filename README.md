@@ -4,6 +4,10 @@ A mobile app that helps people attending live music events solo connect with oth
 
 **Status:** In active development. Core functionality built, tested, and running against real London event data.
 
+**Current state:** 878 real events live in Firestore right now. Core flows — auth, profiles, event browsing, solo group chat, 1-to-1 chat, report/block — verified working end-to-end across two real test accounts.
+
+<img src="docs/screenshots/event-list.png" alt="Event list screen, showing real upcoming London events" width="360">
+
 ## What it does
 
 - Browse upcoming London electronic music events — lineup, venue, date, and genre, pulled from live data (not placeholders).
@@ -15,11 +19,10 @@ A mobile app that helps people attending live music events solo connect with oth
 
 ## Tech stack
 
-- **React Native + Expo** — cross-platform mobile app
+- **TypeScript** — the entire mobile app, React Native + Expo, typed throughout
+- **Python** — standalone data pipeline (unit-tested) pulling real event data from Resident Advisor's GraphQL API into Firestore
 - **Firebase Authentication** — email/password sign-up and login
 - **Firestore** — real-time database for profiles, events, and chat
-- **Python** — standalone data pipeline pulling real event data from Resident Advisor's GraphQL API into Firestore
-- **TypeScript** throughout the app; unit-tested Python for the data pipeline
 
 ## Engineering approach
 
@@ -63,4 +66,6 @@ You'll need your own Firebase project — create one at [console.firebase.google
 
 ## Why I built this
 
-Solo event-going is common but still a bit awkward to navigate — most people either bring a friend or don't go. This app is a small attempt at lowering that barrier, and a project to properly learn full-stack mobile development, real backend security architecture, and how to work effectively alongside AI coding tools while retaining ownership of the actual engineering decisions.
+Solo event-going is common but still a bit awkward to navigate — most people either bring a friend or don't go. This app is a small attempt at lowering that barrier.
+
+It's also a project to properly learn full-stack mobile development, real backend security architecture, and how to work effectively alongside AI coding tools while retaining ownership of the actual engineering decisions.
