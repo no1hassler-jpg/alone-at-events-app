@@ -49,3 +49,9 @@ firebase-debug.log
 # generated native folders
 /ios
 /android
+
+# Python (scripts/)
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/

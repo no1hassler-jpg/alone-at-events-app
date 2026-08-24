@@ -1,14 +1,25 @@
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { FlatList, StatusBar, StyleSheet, Text, View } from 'react-native';
+import { useEffect, useState } from 'react';
+import { ActivityIndicator, FlatList, StatusBar, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { EventListItem } from '../components/EventListItem';
-import { mockEvents } from '../data/mockEvents';
 import { RootStackParamList } from '../navigation/types';
+import { subscribeToUpcomingEvents } from '../services/eventService';
+import { MusicEvent } from '../types/event';
 
 export function HomeScreen() {
   const insets = useSafeAreaInsets();
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
+  const [events, setEvents] = useState<MusicEvent[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    return subscribeToUpcomingEvents((nextEvents) => {
+      setEvents(nextEvents);
+      setLoading(false);
+    });
+  }, []);
 
   return (
     <View style={[styles.container, { paddingTop: insets.top }]}>
@@ -19,18 +30,29 @@ export function HomeScreen() {
         <Text style={styles.subtitle}>Biggest events this month</Text>
       </View>
 
-      <FlatList
-        data={mockEvents}
-        keyExtractor={(item) => item.id}
-        renderItem={({ item }) => (
-          <EventListItem
-            event={item}
-            onPress={() => navigation.navigate('EventDetail', { event: item })}
-          />
-        )}
-        contentContainerStyle={styles.listContent}
-        showsVerticalScrollIndicator={false}
-      />
+      {loading ? (
+        <View style={styles.centered}>
+          <ActivityIndicator color="#4ADE80" />
+        </View>
+      ) : events.length === 0 ? (
+        <View style={styles.centered}>
+          <Text style={styles.emptyText}>No upcoming events yet.</Text>
+          <Text style={styles.emptySubtext}>Check back soon for new listings.</Text>
+        </View>
+      ) : (
+        <FlatList
+          data={events}
+          keyExtractor={(item) => item.id}
+          renderItem={({ item }) => (
+            <EventListItem
+              event={item}
+              onPress={() => navigation.navigate('EventDetail', { event: item })}
+            />
+          )}
+          contentContainerStyle={styles.listContent}
+          showsVerticalScrollIndicator={false}
+        />
+      )}
     </View>
   );
 }
@@ -58,5 +80,22 @@ const styles = StyleSheet.create({
   },
   listContent: {
     paddingBottom: 24,
+  },
+  centered: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 32,
+  },
+  emptyText: {
+    color: '#FFFFFF',
+    fontSize: 15,
+    fontWeight: '700',
+    marginBottom: 6,
+  },
+  emptySubtext: {
+    color: '#8A8A8A',
+    fontSize: 13,
+    textAlign: 'center',
   },
 });
