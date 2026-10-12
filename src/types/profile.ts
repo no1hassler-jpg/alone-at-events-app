@@ -21,6 +21,7 @@ export interface PrivateProfile {
   email: string;
   blockedUserIds: string[];
   interestedEventIds: string[];
+  soloEventIds: string[];
 }
 
 export type UserProfile = PublicProfile & PrivateProfile;

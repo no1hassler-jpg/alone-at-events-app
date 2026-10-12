@@ -10,6 +10,7 @@ import { SignUpScreen } from './src/screens/auth/SignUpScreen';
 import { ConversationScreen } from './src/screens/ConversationScreen';
 import { EditProfileScreen } from './src/screens/EditProfileScreen';
 import { EventDetailScreen } from './src/screens/EventDetailScreen';
+import { GroupConversationScreen } from './src/screens/GroupConversationScreen';
 import { UserProfileScreen } from './src/screens/UserProfileScreen';
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
@@ -46,6 +47,11 @@ function RootNavigator() {
             options={({ route }) => ({ title: route.params.event.venue })}
           />
           <Stack.Screen name="Conversation" component={ConversationScreen} />
+          <Stack.Screen
+            name="GroupConversation"
+            component={GroupConversationScreen}
+            options={({ route }) => ({ title: route.params.eventName })}
+          />
           <Stack.Screen
             name="EditProfile"
             component={EditProfileScreen}

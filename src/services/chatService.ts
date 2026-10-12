@@ -1,5 +1,6 @@
 import {
   addDoc,
+  arrayUnion,
   collection,
   doc,
   DocumentData,
@@ -20,6 +21,10 @@ function chatIdFor(uidA: string, uidB: string): string {
   return [uidA, uidB].sort().join('_');
 }
 
+export function groupChatIdFor(eventId: string): string {
+  return `event_${eventId}`;
+}
+
 function toMillis(value: Timestamp | number | undefined): number {
   if (!value) return Date.now();
   return typeof value === 'number' ? value : value.toMillis();
@@ -28,11 +33,14 @@ function toMillis(value: Timestamp | number | undefined): number {
 function toChat(id: string, data: DocumentData): Chat {
   return {
     id,
+    type: data.type === 'group' ? 'group' : 'direct',
     participantIds: data.participantIds ?? [],
     participantNames: data.participantNames ?? {},
     lastMessage: data.lastMessage ?? '',
     lastMessageAt: toMillis(data.lastMessageAt),
     createdAt: toMillis(data.createdAt),
+    eventId: data.eventId,
+    eventName: data.eventName,
   };
 }
 
@@ -54,6 +62,7 @@ export async function getOrCreateChat(
   const existing = await getDoc(chatRef);
   if (!existing.exists()) {
     await setDoc(chatRef, {
+      type: 'direct',
       participantIds: [currentUser.uid, otherUser.uid],
       participantNames: {
         [currentUser.uid]: currentUser.name,
@@ -65,6 +74,44 @@ export async function getOrCreateChat(
     });
   }
   return chatId;
+}
+
+export async function joinSoloGroupChat(
+  eventId: string,
+  eventName: string,
+  user: { uid: string; name: string }
+): Promise<string> {
+  const chatId = groupChatIdFor(eventId);
+  const chatRef = doc(db, 'chats', chatId);
+  const existing = await getDoc(chatRef);
+  if (!existing.exists()) {
+    await setDoc(chatRef, {
+      type: 'group',
+      eventId,
+      eventName,
+      participantIds: [user.uid],
+      participantNames: { [user.uid]: user.name },
+      lastMessage: '',
+      lastMessageAt: serverTimestamp(),
+      createdAt: serverTimestamp(),
+    });
+  } else {
+    await updateDoc(chatRef, {
+      participantIds: arrayUnion(user.uid),
+      [`participantNames.${user.uid}`]: user.name,
+    });
+  }
+  return chatId;
+}
+
+export function subscribeToChat(chatId: string, callback: (chat: Chat | null) => void) {
+  return onSnapshot(
+    doc(db, 'chats', chatId),
+    (snapshot) => {
+      callback(snapshot.exists() ? toChat(snapshot.id, snapshot.data()) : null);
+    },
+    () => callback(null)
+  );
 }
 
 export function subscribeToChats(uid: string, callback: (chats: Chat[]) => void) {

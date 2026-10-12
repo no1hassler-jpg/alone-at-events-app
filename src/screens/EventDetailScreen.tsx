@@ -1,23 +1,31 @@
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { ActivityIndicator, Alert, Pressable, ScrollView, StyleSheet, Switch, Text, View } from 'react-native';
 import { useAuth } from '../contexts/AuthContext';
-import { usePrivateProfile } from '../hooks/useUserProfile';
+import { usePrivateProfile, usePublicProfile } from '../hooks/useUserProfile';
 import { RootStackParamList } from '../navigation/types';
-import { confirmEventInterest } from '../services/userService';
+import { groupChatIdFor, joinSoloGroupChat, subscribeToChat } from '../services/chatService';
+import { confirmEventInterest, setGoingSolo as persistGoingSolo } from '../services/userService';
+import { Chat } from '../types/chat';
 import { formatEventDate } from '../utils/formatDate';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'EventDetail'>;
 
-export function EventDetailScreen({ route }: Props) {
+export function EventDetailScreen({ route, navigation }: Props) {
   const { event } = route.params;
   const { weekday, day, month } = formatEventDate(event.date);
-  const [goingSolo, setGoingSolo] = useState(false);
   const { user } = useAuth();
   const { profile } = usePrivateProfile(user?.uid);
+  const { profile: myProfile } = usePublicProfile(user?.uid);
   const [confirming, setConfirming] = useState(false);
+  const [groupChat, setGroupChat] = useState<Chat | null>(null);
+  const [togglingSolo, setTogglingSolo] = useState(false);
 
   const interested = profile?.interestedEventIds.includes(event.id) ?? false;
+  const goingSolo = profile?.soloEventIds.includes(event.id) ?? false;
+  const isGroupMember = !!(user && groupChat?.participantIds.includes(user.uid));
+
+  useEffect(() => subscribeToChat(groupChatIdFor(event.id), setGroupChat), [event.id]);
 
   async function handleConfirmInterest() {
     if (!user) return;
@@ -28,6 +36,22 @@ export function EventDetailScreen({ route }: Props) {
       Alert.alert("Couldn't confirm interest", 'Please try again.');
     } finally {
       setConfirming(false);
+    }
+  }
+
+  async function handleToggleSolo(next: boolean) {
+    if (!user || !myProfile) return;
+    setTogglingSolo(true);
+    try {
+      await persistGoingSolo(user.uid, event.id, next);
+      if (next) {
+        await joinSoloGroupChat(event.id, event.name, { uid: user.uid, name: myProfile.name });
+      }
+    } catch (error) {
+      console.error('handleToggleSolo failed', error);
+      Alert.alert("Couldn't update", 'Please try again.');
+    } finally {
+      setTogglingSolo(false);
     }
   }
 
@@ -97,11 +121,28 @@ export function EventDetailScreen({ route }: Props) {
         </View>
         <Switch
           value={goingSolo}
-          onValueChange={setGoingSolo}
+          onValueChange={handleToggleSolo}
+          disabled={togglingSolo}
           trackColor={{ false: '#2A2A2A', true: '#245C3B' }}
           thumbColor={goingSolo ? '#4ADE80' : '#8A8A8A'}
         />
       </View>
+
+      {isGroupMember && groupChat && (
+        <Pressable
+          style={({ pressed }) => [styles.soloChatCard, pressed && styles.soloChatCardPressed]}
+          onPress={() => navigation.navigate('GroupConversation', { chatId: groupChat.id, eventName: event.name })}
+        >
+          <View style={styles.soloTextBlock}>
+            <Text style={styles.soloTitle}>Solo Chat</Text>
+            <Text style={styles.soloSubtitle}>
+              {groupChat.participantIds.length}{' '}
+              {groupChat.participantIds.length === 1 ? 'person' : 'people'} going solo to this event
+            </Text>
+          </View>
+          <Text style={styles.soloChatArrow}>›</Text>
+        </Pressable>
+      )}
     </ScrollView>
   );
 }
@@ -245,5 +286,24 @@ const styles = StyleSheet.create({
     color: '#8A8A8A',
     fontSize: 12,
     lineHeight: 17,
+  },
+  soloChatCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: '#1E2E2A',
+    borderRadius: 12,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: '#245C3B',
+    padding: 16,
+    marginTop: 12,
+  },
+  soloChatCardPressed: {
+    opacity: 0.85,
+  },
+  soloChatArrow: {
+    color: '#4ADE80',
+    fontSize: 24,
+    fontWeight: '700',
   },
 });

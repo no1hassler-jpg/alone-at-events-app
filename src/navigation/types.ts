@@ -6,6 +6,7 @@ export type RootStackParamList = {
   MainTabs: undefined;
   EventDetail: { event: MusicEvent };
   Conversation: { chatId: string; otherUserId: string; otherUserName: string };
+  GroupConversation: { chatId: string; eventName: string };
   EditProfile: undefined;
   UserProfile: { userId: string };
 };

@@ -96,6 +96,29 @@ export function ChatListScreen() {
           data={chats}
           keyExtractor={(item) => item.id}
           renderItem={({ item }) => {
+            if (item.type === 'group') {
+              const title = item.eventName ?? 'Solo Chat';
+              return (
+                <Pressable
+                  style={({ pressed }) => [styles.row, pressed && styles.rowPressed]}
+                  onPress={() =>
+                    navigation.navigate('GroupConversation', { chatId: item.id, eventName: title })
+                  }
+                >
+                  <View style={[styles.avatarPlaceholder, styles.groupAvatarPlaceholder]}>
+                    <Text style={styles.avatarInitial}>{title.charAt(0).toUpperCase()}</Text>
+                  </View>
+                  <View style={styles.rowText}>
+                    <Text style={styles.name}>{title}</Text>
+                    <Text style={styles.lastMessage} numberOfLines={1}>
+                      {item.lastMessage || `${item.participantIds.length} going solo`}
+                    </Text>
+                  </View>
+                  <Text style={styles.time}>{timeAgo(item.lastMessageAt)}</Text>
+                </Pressable>
+              );
+            }
+
             const otherUid = item.participantIds.find((id) => id !== user?.uid) ?? '';
             const otherName = item.participantNames[otherUid] ?? 'Unknown';
             return (
@@ -231,6 +254,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: 12,
+  },
+  groupAvatarPlaceholder: {
+    backgroundColor: '#245C3B',
   },
   avatarInitial: {
     color: '#4ADE80',

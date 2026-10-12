@@ -34,6 +34,7 @@ function toPrivateProfile(data: DocumentData): PrivateProfile {
     email: data.email ?? '',
     blockedUserIds: data.blockedUserIds ?? [],
     interestedEventIds: data.interestedEventIds ?? [],
+    soloEventIds: data.soloEventIds ?? [],
   };
 }
 
@@ -115,6 +116,12 @@ export async function findUserByEmail(email: string): Promise<PublicProfile | nu
 export async function confirmEventInterest(uid: string, eventId: string) {
   await updateDoc(privateDocRef(uid), {
     interestedEventIds: arrayUnion(eventId),
+  });
+}
+
+export async function setGoingSolo(uid: string, eventId: string, goingSolo: boolean) {
+  await updateDoc(privateDocRef(uid), {
+    soloEventIds: goingSolo ? arrayUnion(eventId) : arrayRemove(eventId),
   });
 }
 
